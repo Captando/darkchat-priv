@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DARKROOM | Private Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      :root {
+        --grindr-yellow: #ffc107;
+        --grindr-black: #000000;
+        --grindr-dark: #1a1a1a;
+        --grindr-orange: #ff8f00;
+      }
+
+      body {
+        font-family: "Sora", sans-serif;
+        background-color: var(--grindr-black);
+        color: white;
+        margin: 0;
+        overflow-x: hidden;
+      }
+
+      h1,
+      h2,
+      h3,
+      .font-bebas {
+        font-family: "Bebas Neue", sans-serif;
+        letter-spacing: 0.05em;
+      }
+
+      .btn-primary {
+        background-color: var(--grindr-yellow);
+        color: black;
+        font-weight: 800;
+        text-transform: uppercase;
+        transition: all 0.2s;
+        border: none;
+        border-radius: 2px;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--grindr-orange);
+        transform: translateY(-1px);
+      }
+
+      .input-dark {
+        background-color: var(--grindr-dark);
+        border: 1px solid #333;
+        color: white;
+        border-radius: 2px;
+      }
+
+      .input-dark:focus {
+        border-color: var(--grindr-yellow);
+        outline: none;
+      }
+
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #000;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--grindr-yellow);
+      }
+
+      .grid-item {
+        aspect-ratio: 1 / 1;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+      }
+
+      .chat-bubble {
+        border-radius: 2px;
+        max-width: 85%;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        background-color: #4caf50;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .screen {
+        display: none;
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      .screen.active {
+        display: flex;
+      }
+
+      .modal-enter {
+        animation: fadeIn 0.2s ease-in-out;
+      }
+      .upload-bar {
+        height: 4px;
+        background: #333;
+        position: relative;
+        overflow: hidden;
+      }
+      .upload-bar span {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 0%;
+        background: var(--grindr-yellow);
+        transition: width 0.2s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <div
+      id="app-container"
+      class="flex-grow flex flex-col w-full max-w-2xl mx-auto border-x border-[#1A1A1A] relative"
+    >
+      {% if mode == "auth" %}
+      <section
+        id="screen-auth"
+        class="screen active flex-col justify-center items-center p-6 min-h-screen"
+      >
+        <div class="w-full text-center mb-12">
+          <h1 class="text-6xl text-[#FFC107]">DARKROOM</h1>
+          <p class="text-gray-500 uppercase tracking-widest text-sm">
+            Conexões Privadas e Diretas
+          </p>
+        </div>
+
+        <div class="w-full bg-[#1A1A1A] p-6 sm:p-8 border-t-4 border-[#FFC107]">
+          <div id="auth-tabs" class="flex mb-6 border-b border-gray-800">
+            <button
+              onclick="toggleAuthMode('login')"
+              id="tab-login"
+              class="flex-1 pb-3 text-[#FFC107] font-bold uppercase border-b-2 border-[#FFC107]"
+              type="button"
+            >
+              Login
+            </button>
+            <button
+              onclick="toggleAuthMode('register')"
+              id="tab-register"
+              class="flex-1 pb-3 text-gray-500 font-bold uppercase border-b-2 border-transparent"
+              type="button"
+            >
+              Registro
+            </button>
+          </div>
+
+          <div id="auth-login" class="space-y-4">
+            <form method="post" action="/auth/login" class="space-y-4">
+              <div class="flex flex-col">
+                <label class="text-[10px] uppercase text-gray-400 mb-1">Usuário</label>
+                <input
+                  name="username"
+                  type="text"
+                  placeholder="user@darkroom.net"
+                  class="input-dark p-3"
+                  required
+                />
+              </div>
+              <div class="flex flex-col">
+                <label class="text-[10px] uppercase text-gray-400 mb-1">Senha</label>
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  class="input-dark p-3"
+                  required
+                />
+              </div>
+              <button class="btn-primary w-full py-4 mt-4 font-bebas text-xl" type="submit">
+                Entrar no Perímetro
+              </button>
+            </form>
+          </div>
+
+          <div id="auth-register" class="space-y-4 hidden">
+            <form method="post" action="/auth/register" class="space-y-4">
+              <div class="flex flex-col">
+                <label class="text-[10px] uppercase text-gray-400 mb-1">Usuário</label>
+                <input
+                  name="username"
+                  type="text"
+                  placeholder="novo_usuario"
+                  class="input-dark p-3"
+                  required
+                />
+              </div>
+              <div class="flex flex-col">
+                <label class="text-[10px] uppercase text-gray-400 mb-1">Senha</label>
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  class="input-dark p-3"
+                  required
+                />
+              </div>
+              <button class="btn-primary w-full py-4 mt-4 font-bebas text-xl" type="submit">
+                Criar Conta
+              </button>
+            </form>
+          </div>
+
+          <p class="text-center text-[10px] text-gray-600 mt-6 uppercase">
+            Ao entrar você aceita os termos de anonimato e criptografia ponta-a-ponta.
+          </p>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if mode == "app" %}
+      <section id="screen-app" class="screen active flex-col min-h-screen overflow-hidden">
+        <header
+          class="bg-black p-4 flex justify-between items-center border-b border-[#1A1A1A] shrink-0"
+        >
+          <div>
+            <h2 class="text-2xl text-[#FFC107] font-bebas">EXPLORAR</h2>
+            <p class="text-[10px] text-gray-500 uppercase">{{ user.username }}</p>
+          </div>
+          <div class="flex gap-3 items-center">
+            <a
+              id="resumeRoomBtn"
+              href="#"
+              class="hidden px-2 py-1 text-[10px] border border-[#333] text-gray-400 hover:text-[#FFC107]"
+            >
+              Retomar Sala
+            </a>
+            <button onclick="openProfile()" class="text-white hover:text-[#FFC107]" type="button">
+              <i data-lucide="user"></i>
+            </button>
+            <form method="post" action="/auth/logout">
+              <button class="text-gray-500 hover:text-red-500" type="submit">
+                <i data-lucide="log-out"></i>
+              </button>
+            </form>
+          </div>
+        </header>
+
+        <div class="p-4 bg-[#0A0A0A] border-b border-[#1A1A1A]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] uppercase font-bold text-gray-400">Raio de Distância</span>
+            <span id="radius-val" class="text-[#FFC107] text-xs font-bold">15 km</span>
+          </div>
+          <input
+            id="radius"
+            type="range"
+            min="1"
+            max="100"
+            value="15"
+            oninput="updateRadius(this.value)"
+            class="w-full h-1 bg-gray-800 appearance-none cursor-pointer accent-[#FFC107]"
+          />
+        </div>
+
+        <div
+          id="users-grid"
+          class="flex-grow overflow-y-auto grid grid-cols-2 md:grid-cols-3 gap-[1px] bg-[#1A1A1A]"
+        ></div>
+
+        <a
+          href="/new"
+          class="absolute bottom-6 right-6 btn-primary w-14 h-14 rounded-full shadow-2xl flex items-center justify-center"
+        >
+          <i data-lucide="plus"></i>
+        </a>
+      </section>
+
+      <div id="profile-modal" class="fixed inset-0 z-50 bg-black/95 overflow-y-auto hidden">
+        <div class="p-4 max-w-2xl mx-auto min-h-screen flex flex-col modal-enter">
+          <button onclick="closeProfile()" class="self-end p-4 text-[#FFC107]" type="button">
+            <i data-lucide="x"></i>
+          </button>
+
+          <div class="w-full h-48 bg-[#1A1A1A] relative mb-12 border border-[#333]">
+            <img
+              id="preview-banner"
+              src="{{ user.banner_path or '' }}"
+              class="w-full h-full object-cover"
+              alt=""
+            />
+            <div
+              class="absolute -bottom-10 left-6 w-24 h-24 bg-black border-2 border-[#FFC107] overflow-hidden"
+            >
+              <img
+                id="preview-avatar"
+                src="{{ user.avatar_path or '' }}"
+                class="w-full h-full object-cover"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="px-6">
+            <div class="flex gap-3 mb-6">
+              <button
+                id="tab-profile"
+                class="btn-primary px-4 py-2 text-xs"
+                type="button"
+                onclick="switchProfileTab('profile')"
+              >
+                Perfil
+              </button>
+              <button
+                id="tab-albums"
+                class="px-4 py-2 text-xs border border-[#333] text-gray-400"
+                type="button"
+                onclick="switchProfileTab('albums')"
+              >
+                Álbuns
+              </button>
+            </div>
+
+            <div id="panel-profile" class="space-y-6">
+              <div>
+                <h2 class="text-3xl font-bebas text-[#FFC107]">{{ user.username }}</h2>
+                <p class="text-sm text-gray-400">Seu perfil</p>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-[10px] uppercase text-gray-500 font-bold">Editar perfil</label>
+                <form
+                  id="profileForm"
+                  method="post"
+                  action="/me/profile"
+                  enctype="multipart/form-data"
+                  class="space-y-3"
+                >
+                  <input
+                    name="username"
+                    class="input-dark p-3 w-full"
+                    value="{{ user.username }}"
+                    placeholder="Nome de usuário"
+                  />
+                  <textarea
+                    name="bio"
+                    class="input-dark p-3 w-full min-h-[120px]"
+                    placeholder="Escreva sua bio"
+                  >{{ user.bio }}</textarea>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="text-[10px] uppercase text-gray-400 mb-1 block">Avatar</label>
+                      <input
+                        id="avatarInput"
+                        name="avatar"
+                        type="file"
+                        accept="image/*"
+                        class="block w-full text-sm"
+                        data-crop="avatar"
+                        data-preview="preview-avatar"
+                      />
+                    </div>
+                    <div>
+                      <label class="text-[10px] uppercase text-gray-400 mb-1 block">Banner</label>
+                      <input
+                        id="bannerInput"
+                        name="banner"
+                        type="file"
+                        accept="image/*"
+                        class="block w-full text-sm"
+                        data-crop="banner"
+                        data-preview="preview-banner"
+                      />
+                    </div>
+                  </div>
+                  <button class="btn-primary w-full py-3 font-bebas text-lg" type="submit">
+                    Salvar
+                  </button>
+                </form>
+              </div>
+
+              <div class="space-y-3">
+                <label class="text-[10px] uppercase text-gray-500 font-bold">Galeria de Perfil</label>
+                <form
+                  id="profilePhotosForm"
+                  method="post"
+                  action="/me/photos"
+                  enctype="multipart/form-data"
+                  class="space-y-3"
+                >
+                  <input name="files" type="file" multiple accept="image/*" class="block w-full text-sm" />
+                  <button class="btn-primary w-full py-3 font-bebas text-lg" type="submit">
+                    Enviar Fotos
+                  </button>
+                </form>
+                <div id="profile-photos" class="grid grid-cols-3 gap-2"></div>
+              </div>
+            </div>
+
+            <div id="panel-albums" class="space-y-6 hidden">
+              <div class="text-xs uppercase text-gray-500">Seus álbuns</div>
+              <form method="post" action="/albums" enctype="multipart/form-data" class="space-y-3">
+                <input name="caption" class="input-dark p-3 w-full" placeholder="Legenda do álbum" />
+                <input name="files" type="file" multiple accept="*/*" class="block w-full text-sm" />
+                <button class="btn-primary w-full py-3 font-bebas text-lg" type="submit">
+                  Publicar Álbum
+                </button>
+              </form>
+              <div id="albums" class="space-y-4"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if mode == "chat" %}
+      <section id="screen-chat" class="screen active flex-col min-h-screen overflow-hidden bg-black">
+        <header class="bg-[#1A1A1A] p-4 flex flex-col border-b border-[#333] shrink-0">
+          <div class="flex justify-between items-center mb-2">
+            <div class="flex items-center gap-3">
+              <a href="/app" class="text-white"><i data-lucide="arrow-left"></i></a>
+              <div class="flex flex-col">
+                <span class="text-xs text-gray-400 font-mono" id="chat-uuid">UUID: {{ room_id }}</span>
+                <span class="text-[10px] text-green-500 uppercase font-bold flex items-center gap-1">
+                  <span class="status-dot"></span> Online
+                </span>
+              </div>
+            </div>
+            <div class="flex gap-2 items-center">
+              <button
+                id="e2eeBtn"
+                class="p-2 bg-black border border-[#333] text-gray-400 hover:text-[#FFC107]"
+                title="Criptografia ponta a ponta"
+                type="button"
+              >
+                <i data-lucide="lock"></i>
+              </button>
+              <span id="e2eeStatus" class="text-[9px] text-gray-500 uppercase">E2EE OFF</span>
+              <span id="e2eeFingerprint" class="text-[9px] text-gray-500 uppercase hidden">FP: ----</span>
+              <button
+                id="e2eeConfirm"
+                class="px-2 py-1 text-[9px] border border-[#333] text-gray-400 hidden"
+                type="button"
+              >
+                Confirmar
+              </button>
+              <button
+                id="e2eeRotate"
+                class="px-2 py-1 text-[9px] border border-[#333] text-gray-400 hidden"
+                type="button"
+              >
+                Rotacionar
+              </button>
+              <button
+                onclick="copyChatLink()"
+                class="p-2 bg-black border border-[#333] text-gray-400 hover:text-[#FFC107]"
+                title="Copiar Link"
+                type="button"
+              >
+                <i data-lucide="share-2" class="w-4 h-4"></i>
+              </button>
+              <button
+                onclick="destroyChat()"
+                class="p-2 bg-red-900/20 border border-red-900 text-red-500 hover:bg-red-900 hover:text-white"
+                title="Destruir Chat"
+                type="button"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <div class="text-[10px] text-gray-500 uppercase flex items-center justify-between">
+            <span id="online-count">0 online</span>
+          </div>
+          <div id="online-list" class="mt-2 flex flex-wrap gap-2"></div>
+        </header>
+
+        <div id="messages-list" class="flex-grow overflow-y-auto p-4 space-y-4 flex flex-col"></div>
+
+        <div id="upload-preview" class="hidden border-t border-[#222] bg-[#0b0b0b] p-3 space-y-3">
+          <div class="text-[10px] uppercase text-gray-500">Prévia de mídia</div>
+          <div id="preview-grid" class="grid grid-cols-3 gap-2"></div>
+          <div class="upload-bar"><span id="upload-progress"></span></div>
+          <div class="flex gap-2">
+            <button id="send-media-btn" class="btn-primary w-full py-2 text-sm font-bebas" type="button">
+              Enviar mídia
+            </button>
+            <button id="cancel-media-btn" class="w-full py-2 text-sm border border-[#333] text-gray-400" type="button">
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+        <footer class="p-3 sm:p-4 bg-[#1A1A1A] border-t border-[#333]">
+          <form id="chatForm" class="flex gap-2 items-center">
+            <input id="mediaInput" type="file" multiple class="hidden" />
+            <button type="button" id="albumBtn" class="p-2 bg-black border border-[#333] text-gray-400 hover:text-[#FFC107]">
+              <i data-lucide="images"></i>
+            </button>
+            <button type="button" id="attachBtn" class="p-2 bg-black border border-[#333] text-gray-400 hover:text-[#FFC107]">
+              <i data-lucide="paperclip"></i>
+            </button>
+            <button type="button" id="locBtn" class="p-2 bg-black border border-[#333] text-gray-400 hover:text-[#FFC107]">
+              <i data-lucide="map-pin"></i>
+            </button>
+            <input
+              id="messageInput"
+              type="text"
+              placeholder="Enviar mensagem criptografada..."
+              class="flex-grow bg-black border-none p-3 text-sm focus:ring-1 focus:ring-[#FFC107] text-white"
+            />
+            <button type="submit" class="bg-[#FFC107] px-4 text-black">
+              <i data-lucide="send"></i>
+            </button>
+          </form>
+        </footer>
+      </section>
+      {% endif %}
+
+      {% if mode == "album" %}
+      <section class="screen active flex-col min-h-screen overflow-hidden bg-black">
+        <header class="bg-[#1A1A1A] p-4 flex items-center justify-between border-b border-[#333] shrink-0">
+          <div class="flex items-center gap-3">
+            <a href="{{ '/app' if not shared else '/' }}" class="text-white"><i data-lucide="arrow-left"></i></a>
+            <div>
+              <div class="text-[10px] text-gray-400 uppercase">Álbum</div>
+              <div class="text-sm text-[#FFC107]">{{ album.caption or 'Sem legenda' }}</div>
+            </div>
+          </div>
+          {% if not shared %}
+          <div class="flex items-center gap-2">
+            <select id="albumTtl" class="bg-black border border-[#333] text-[10px] text-gray-400 px-2 py-1">
+              <option value="1">1h</option>
+              <option value="24" selected>24h</option>
+              <option value="168">7d</option>
+            </select>
+            <button id="copyAlbumLink" class="p-2 bg-black border border-[#333] text-gray-400 hover:text-[#FFC107]" type="button">
+              <i data-lucide="share-2"></i>
+            </button>
+            <button id="revokeAlbumLinks" class="p-2 bg-black border border-[#333] text-red-400 hover:text-red-500" type="button">
+              <i data-lucide="ban"></i>
+            </button>
+          </div>
+          {% endif %}
+        </header>
+
+          <div class="p-4 space-y-4">
+          {% if album.media %}
+          {% for m in album.media %}
+          <div class="bg-[#111] border border-[#333] p-3">
+            {% if m.kind.startswith("image/") %}
+            <img src="{{ m.path }}" class="w-full max-h-[60vh] object-contain media-zoom cursor-zoom-in" data-kind="image" data-src="{{ m.path }}" />
+            {% elif m.kind.startswith("audio/") %}
+            <audio controls class="w-full"><source src="{{ m.path }}"></audio>
+            {% elif m.kind.startswith("video/") %}
+            <video controls class="w-full max-h-[60vh] media-zoom cursor-zoom-in" data-kind="video" data-src="{{ m.path }}"><source src="{{ m.path }}"></video>
+            {% else %}
+            <a href="{{ m.path }}" class="text-[#FFC107] underline text-sm" download>Baixar arquivo</a>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-gray-500 text-xs">Álbum vazio.</div>
+          {% endif %}
+        </div>
+        {% if not shared %}
+        <div class="px-4 pb-6">
+          <div class="text-[10px] uppercase text-gray-500 mb-2">Links compartilhados</div>
+          <div id="album-links" class="space-y-2 text-xs text-gray-400"></div>
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
+    </div>
+
+    <div
+      id="crop-modal"
+      class="fixed inset-0 z-[100] bg-black/95 hidden items-center justify-center p-4"
+    >
+      <div class="w-full max-w-xl bg-[#0b0b0b] border border-[#333] p-4 modal-enter">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-xs uppercase text-gray-400">Ajustar imagem</div>
+          <button id="crop-cancel" class="text-gray-400 hover:text-white" type="button">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div id="crop-frame" class="relative overflow-hidden bg-black border border-[#333] mx-auto">
+          <img id="crop-image" alt="" class="absolute left-1/2 top-1/2 select-none" />
+        </div>
+        <div class="mt-4">
+          <label class="text-[10px] uppercase text-gray-400">Zoom</label>
+          <input
+            id="crop-zoom"
+            type="range"
+            min="1"
+            max="3"
+            step="0.01"
+            value="1"
+            class="w-full h-1 bg-gray-800 appearance-none cursor-pointer accent-[#FFC107]"
+          />
+        </div>
+        <div class="mt-4 flex gap-2">
+          <button id="crop-apply" class="btn-primary w-full py-3 font-bebas text-lg" type="button">
+            Aplicar
+          </button>
+        </div>
+        <div class="mt-2 text-[10px] text-gray-500">
+          Arraste para reposicionar a imagem dentro do quadro.
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="toast"
+      class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-[#FFC107] text-black px-6 py-2 font-bold text-xs uppercase transition-all opacity-0 pointer-events-none z-[100]"
+    >
+      Copiado para a área de transferência
+    </div>
+
+    <div id="media-lightbox" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/90 p-4">
+      <button id="lightbox-close" class="absolute top-4 right-4 text-[#FFC107] text-2xl">×</button>
+      <div id="lightbox-content" class="max-w-4xl w-full"></div>
+    </div>
+
+    <div id="album-modal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/95 p-4">
+      <div class="w-full max-w-2xl bg-[#0b0b0b] border border-[#333] p-4 modal-enter">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-xs uppercase text-gray-400">Enviar álbum para a sala</div>
+          <button id="album-cancel" class="text-gray-400 hover:text-white" type="button">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="text-[10px] uppercase text-gray-500 mb-2">Prazo do link</div>
+        <select id="album-ttl-chat" class="bg-black border border-[#333] text-[10px] text-gray-400 px-2 py-1 mb-3">
+          <option value="1">1h</option>
+          <option value="24" selected>24h</option>
+          <option value="168">7d</option>
+        </select>
+        <div id="album-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <script>
+      function toggleAuthMode(mode) {
+        const loginTab = document.getElementById("tab-login");
+        const registerTab = document.getElementById("tab-register");
+        const loginForm = document.getElementById("auth-login");
+        const registerForm = document.getElementById("auth-register");
+
+        if (mode === "login") {
+          loginTab.classList.add("text-[#FFC107]", "border-[#FFC107]");
+          loginTab.classList.remove("text-gray-500", "border-transparent");
+          registerTab.classList.remove("text-[#FFC107]", "border-[#FFC107]");
+          registerTab.classList.add("text-gray-500", "border-transparent");
+          loginForm.classList.remove("hidden");
+          registerForm.classList.add("hidden");
+        } else {
+          registerTab.classList.add("text-[#FFC107]", "border-[#FFC107]");
+          registerTab.classList.remove("text-gray-500", "border-transparent");
+          loginTab.classList.remove("text-[#FFC107]", "border-[#FFC107]");
+          loginTab.classList.add("text-gray-500", "border-transparent");
+          registerForm.classList.remove("hidden");
+          loginForm.classList.add("hidden");
+        }
+      }
+
+      function switchProfileTab(tab) {
+        const profile = document.getElementById("panel-profile");
+        const albums = document.getElementById("panel-albums");
+        const btnProfile = document.getElementById("tab-profile");
+        const btnAlbums = document.getElementById("tab-albums");
+        if (tab === "profile") {
+          profile.classList.remove("hidden");
+          albums.classList.add("hidden");
+          btnProfile.classList.add("btn-primary");
+          btnAlbums.classList.remove("btn-primary");
+          btnAlbums.classList.add("border", "border-[#333]", "text-gray-400");
+        } else {
+          albums.classList.remove("hidden");
+          profile.classList.add("hidden");
+          btnAlbums.classList.add("btn-primary");
+          btnProfile.classList.remove("btn-primary");
+          btnProfile.classList.add("border", "border-[#333]", "text-gray-400");
+        }
+      }
+
+      function showToast(text) {
+        const toast = document.getElementById("toast");
+        toast.innerText = text;
+        toast.classList.remove("opacity-0", "pointer-events-none");
+        toast.classList.add("opacity-100");
+        setTimeout(() => {
+          toast.classList.remove("opacity-100");
+          toast.classList.add("opacity-0", "pointer-events-none");
+        }, 2000);
+      }
+
+      function bufToHex(buf) {
+        const bytes = new Uint8Array(buf);
+        return Array.from(bytes)
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      }
+
+      function bufToB64(buf) {
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        bytes.forEach((b) => (binary += String.fromCharCode(b)));
+        return btoa(binary);
+      }
+
+      function b64ToBuf(b64) {
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes.buffer;
+      }
+
+      const roomSecrets = {};
+
+      function getRoomSecret(roomId) {
+        return roomSecrets[roomId] || "";
+      }
+
+      function setRoomSecret(roomId, secret) {
+        roomSecrets[roomId] = secret;
+      }
+
+      async function getRoomSalt(roomId) {
+        const enc = new TextEncoder();
+        const digest = await crypto.subtle.digest("SHA-256", enc.encode(roomId));
+        return bufToB64(digest);
+      }
+
+      async function deriveKey(secret, saltB64) {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+          "raw",
+          enc.encode(secret),
+          { name: "PBKDF2" },
+          false,
+          ["deriveKey"]
+        );
+        return crypto.subtle.deriveKey(
+          {
+            name: "PBKDF2",
+            salt: b64ToBuf(saltB64),
+            iterations: 120000,
+            hash: "SHA-256",
+          },
+          keyMaterial,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      }
+
+      async function fingerprintKey(key) {
+        const raw = await crypto.subtle.exportKey("raw", key);
+        const digest = await crypto.subtle.digest("SHA-256", raw);
+        return bufToHex(digest).slice(0, 12).toUpperCase();
+      }
+
+      async function encryptText(text, key, saltB64) {
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const enc = new TextEncoder();
+        const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(text));
+        return { ct: bufToB64(ct), iv: bufToB64(iv), salt: saltB64 };
+      }
+
+      async function decryptText(payload, key) {
+        const dec = new TextDecoder();
+        const pt = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: new Uint8Array(b64ToBuf(payload.iv)) },
+          key,
+          b64ToBuf(payload.ct)
+        );
+        return dec.decode(pt);
+      }
+
+      async function encryptBuffer(buf, key, saltB64) {
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, buf);
+        return { ct, iv: bufToB64(iv), salt: saltB64 };
+      }
+
+      async function decryptBuffer(payload, key) {
+        return crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: new Uint8Array(b64ToBuf(payload.iv)) },
+          key,
+          b64ToBuf(payload.ct)
+        );
+      }
+
+      function openProfile() {
+        const modal = document.getElementById("profile-modal");
+        if (!modal) return;
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeProfile() {
+        const modal = document.getElementById("profile-modal");
+        if (!modal) return;
+        modal.classList.add("hidden");
+        document.body.style.overflow = "auto";
+      }
+
+      async function updateLocation() {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          const form = new FormData();
+          form.append("lat", pos.coords.latitude);
+          form.append("lon", pos.coords.longitude);
+          await fetch("/me/location", { method: "POST", body: form });
+          fetchNearby();
+        });
+      }
+
+      async function fetchNearby() {
+        const radius = document.getElementById("radius");
+        const value = radius ? radius.value : 15;
+        const res = await fetch(`/users/nearby?radius_km=${value}`);
+        const data = await res.json();
+        const grid = document.getElementById("users-grid");
+        if (!grid) return;
+        grid.innerHTML = "";
+        if (!data.users.length) {
+          grid.innerHTML = '<div class="col-span-2 md:col-span-3 text-gray-500 text-xs p-4">Ninguém por perto.</div>';
+          return;
+        }
+        data.users.forEach((u) => {
+          const div = document.createElement("div");
+          div.className = "grid-item cursor-pointer group relative overflow-hidden";
+          const img = u.avatar || u.banner;
+          div.innerHTML = `
+            ${img ? `<img src="${img}" class="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all">` : '<div class="w-full h-full bg-[#111] flex items-center justify-center text-xs text-gray-500">sem foto</div>'}
+            <div class="absolute bottom-1 left-1 bg-black/60 px-1 py-0.5 text-[8px] font-bold">
+              ${u.distance} KM
+            </div>
+            <div class="absolute inset-0 bg-yellow-400/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <button data-id="${u.id}" class="absolute top-1 right-1 text-[9px] bg-black/70 px-2 py-1 text-[#FFC107]">Bloquear</button>
+          `;
+          div.querySelector("button").addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const id = e.target.getAttribute("data-id");
+            await fetch(`/block/${id}`, { method: "POST" });
+            fetchNearby();
+          });
+          grid.appendChild(div);
+        });
+      }
+
+      async function loadAlbums() {
+        const res = await fetch("/albums/me");
+        const data = await res.json();
+        const container = document.getElementById("albums");
+        if (!container) return;
+        container.innerHTML = "";
+        if (!data.albums.length) {
+          container.innerHTML = '<div class="text-gray-500 text-xs">Nenhum álbum ainda.</div>';
+          return;
+        }
+        data.albums.forEach((a) => {
+          const block = document.createElement("div");
+          block.className = "bg-[#111] border border-[#333] p-3";
+          const mediaHtml = a.media
+            .map((m) => {
+              if (m.kind.startsWith("image/")) {
+                return `<img src="${m.path}" class="w-full max-h-[60vh] object-contain"/>`;
+              }
+              if (m.kind.startsWith("audio/")) {
+                return `<audio controls class="w-full"><source src="${m.path}"></audio>`;
+              }
+              if (m.kind.startsWith("video/")) {
+                return `<video controls class="w-full max-h-[60vh]"><source src="${m.path}"></video>`;
+              }
+              return `<a href="${m.path}" class="text-[#FFC107] underline text-sm" download>Baixar arquivo</a>`;
+            })
+            .join("");
+          block.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-sm text-gray-200">${a.caption || ""}</div>
+              <div class="flex items-center gap-2">
+                <select class="bg-black border border-[#333] text-[10px] text-gray-400 px-2 py-1" data-ttl="${a.id}">
+                  <option value="1">1h</option>
+                  <option value="24" selected>24h</option>
+                  <option value="168">7d</option>
+                </select>
+                <button class="text-xs text-[#FFC107] underline" data-share="${a.id}">Compartilhar</button>
+                <button class="text-xs text-red-400 underline" data-revoke="${a.id}">Revogar</button>
+                <a href="/album/${a.id}" class="text-xs text-gray-400 underline">Abrir</a>
+              </div>
+            </div>
+            <div class="space-y-3">${mediaHtml}</div>
+            <div class="mt-3 text-xs text-gray-500">Links:</div>
+            <div class="mt-2 space-y-1 text-xs text-gray-400" id="links-${a.id}"></div>
+          `;
+          container.appendChild(block);
+          const shareBtn = block.querySelector("[data-share]");
+          const revokeBtn = block.querySelector("[data-revoke]");
+          const ttlSelect = block.querySelector("[data-ttl]");
+          if (shareBtn) {
+            shareBtn.addEventListener("click", async () => {
+              const ttlVal = ttlSelect ? ttlSelect.value : "24";
+              const res = await fetch(`/album/${a.id}/share?ttl_hours=${ttlVal}`, { method: "POST" });
+              const data = await res.json();
+              const link = `${location.origin}/album/shared/${data.token}`;
+              try {
+                await navigator.clipboard.writeText(link);
+                showToast("Link do álbum copiado");
+              } catch (e) {
+                prompt("Copie o link do álbum:", link);
+              }
+              loadAlbumLinks(a.id, document.getElementById(`links-${a.id}`));
+            });
+          }
+          if (revokeBtn) {
+            revokeBtn.addEventListener("click", async () => {
+              if (!confirm("Revogar todos os links deste álbum?")) return;
+              await fetch(`/album/${a.id}/revoke`, { method: "POST" });
+              showToast("Links revogados");
+              loadAlbumLinks(a.id, document.getElementById(`links-${a.id}`));
+            });
+          }
+          loadAlbumLinks(a.id, document.getElementById(`links-${a.id}`));
+        });
+      }
+
+      async function loadAlbumLinks(albumId, container) {
+        if (!container) return;
+        const res = await fetch(`/album/${albumId}/shares`);
+        if (!res.ok) return;
+        const data = await res.json();
+        container.innerHTML = "";
+        if (!data.shares.length) {
+          container.innerHTML = "<div class='text-gray-500 text-xs'>Sem links.</div>";
+          return;
+        }
+        data.shares.forEach((s) => {
+          const div = document.createElement("div");
+          div.className = "flex items-center justify-between gap-2 border border-[#222] px-2 py-1";
+          const link = `${location.origin}/album/shared/${s.token}`;
+          div.innerHTML = `
+            <div class="truncate">${link}</div>
+            <div class="flex items-center gap-2">
+              <button class="text-[#FFC107] text-[10px] underline" data-copy="${s.token}">Copiar</button>
+              <button class="text-red-400 text-[10px] underline" data-del="${s.token}">Revogar</button>
+            </div>
+          `;
+          div.querySelector("[data-copy]").addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(link);
+              showToast("Link copiado");
+            } catch (e) {
+              prompt("Copie o link:", link);
+            }
+          });
+          div.querySelector("[data-del]").addEventListener("click", async () => {
+            await fetch(`/album/share/revoke/${s.token}`, { method: "POST" });
+            loadAlbumLinks(albumId, container);
+          });
+          container.appendChild(div);
+        });
+      }
+
+      async function loadProfilePhotos() {
+        const res = await fetch("/me/photos");
+        const data = await res.json();
+        const container = document.getElementById("profile-photos");
+        if (!container) return;
+        container.innerHTML = "";
+        if (!data.photos.length) {
+          container.innerHTML = '<div class="text-gray-500 text-xs">Sem fotos ainda.</div>';
+          return;
+        }
+        data.photos.forEach((p) => {
+          const div = document.createElement("div");
+          div.className = "relative";
+          div.innerHTML = `
+            <img src="${p.path}" class="w-full aspect-square object-cover border border-[#333]" />
+            <button data-id="${p.id}" class="absolute top-1 right-1 bg-black/70 text-white text-[10px] px-2 py-1">X</button>
+          `;
+          div.querySelector("button").addEventListener("click", async (e) => {
+            const id = e.target.getAttribute("data-id");
+            await fetch(`/me/photos/delete/${id}`, { method: "POST" });
+            loadProfilePhotos();
+          });
+          container.appendChild(div);
+        });
+      }
+
+      function updateRadius(val) {
+        const label = document.getElementById("radius-val");
+        if (label) label.innerText = `${val} km`;
+        fetchNearby();
+      }
+
+      let ws = null;
+      let e2eeEnabled = false;
+      let e2eeKey = null;
+      let e2eeSalt = null;
+      const seenMsgIds = new Set();
+
+      function updateE2EEStatus() {
+        const status = document.getElementById("e2eeStatus");
+        const fp = document.getElementById("e2eeFingerprint");
+        const confirmBtn = document.getElementById("e2eeConfirm");
+        const rotateBtn = document.getElementById("e2eeRotate");
+        if (!status) return;
+        status.textContent = e2eeEnabled ? "E2EE ON" : "E2EE OFF";
+        status.className = e2eeEnabled ? "text-[9px] text-[#FFC107] uppercase" : "text-[9px] text-gray-500 uppercase";
+        if (fp) fp.classList.toggle("hidden", !e2eeEnabled);
+        if (confirmBtn) confirmBtn.classList.toggle("hidden", !e2eeEnabled);
+        if (rotateBtn) rotateBtn.classList.toggle("hidden", !e2eeEnabled);
+      }
+
+      async function ensureE2EE(roomId) {
+        let secret = getRoomSecret(roomId);
+        if (!secret) {
+          secret = prompt("Defina o segredo da sala (não é enviado ao servidor):");
+          if (!secret) return false;
+          setRoomSecret(roomId, secret);
+        }
+        e2eeSalt = await getRoomSalt(roomId);
+        e2eeKey = await deriveKey(secret, e2eeSalt);
+        e2eeEnabled = true;
+        const fp = document.getElementById("e2eeFingerprint");
+        if (fp) fp.textContent = `FP: ${await fingerprintKey(e2eeKey)}`;
+        updateE2EEStatus();
+        return true;
+      }
+
+      async function initChat() {
+        const roomId = "{{ room_id or '' }}";
+        if (!roomId) return;
+        localStorage.setItem("last_room_id", roomId);
+        ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${roomId}`);
+        const messages = document.getElementById("messages-list");
+        const form = document.getElementById("chatForm");
+        const input = document.getElementById("messageInput");
+        const myUser = "{{ user.username if user else '' }}";
+        const myAvatar = "{{ user.avatar_path if user else '' }}";
+        const myId = "{{ user.id if user else '' }}";
+        const ownerId = "{{ room_owner_id if room_owner_id is defined else '' }}";
+        const isOwner = ownerId && myId && ownerId === myId;
+        const onlineList = document.getElementById("online-list");
+        const onlineCount = document.getElementById("online-count");
+
+        const renderMedia = (url, kind, zoomable = false) => {
+          const zoomClass = zoomable ? "media-zoom cursor-zoom-in" : "";
+          if (kind.startsWith("image/")) {
+            return `<img src="${url}" class="w-full max-h-[60vh] object-contain border border-[#333] ${zoomClass}" data-kind="image" data-src="${url}" />`;
+          }
+          if (kind.startsWith("audio/")) {
+            return `<audio controls class="w-full"><source src="${url}"></audio>`;
+          }
+          if (kind.startsWith("video/")) {
+            return `<video controls class="w-full max-h-[60vh] ${zoomClass}" data-kind="video" data-src="${url}"><source src="${url}"></video>`;
+          }
+          return `<a href="${url}" class="text-[#FFC107] underline text-sm" download>Baixar arquivo</a>`;
+        };
+
+        const renderAlbumCard = (url, title, thumb = "") => {
+          return `
+            <div class="border border-[#333] p-3 bg-[#0f0f0f]">
+              <div class="text-xs uppercase text-gray-500 mb-1">Álbum</div>
+              <div class="text-sm text-[#FFC107] mb-2">${title || "Sem legenda"}</div>
+              ${thumb ? `<img src="${thumb}" class="w-full h-36 object-cover border border-[#333] mb-2">` : ""}
+              <a href="${url}" target="_blank" class="text-xs text-gray-300 underline">Abrir álbum</a>
+            </div>
+          `;
+        };
+
+        const renderLocation = (lat, lon) => {
+          const delta = 0.003;
+          const left = lon - delta;
+          const right = lon + delta;
+          const top = lat + delta;
+          const bottom = lat - delta;
+          const src = `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${lat}%2C${lon}`;
+          return `
+            <div class="text-xs text-gray-400 mb-2">Compartilhou localização</div>
+            <div class="w-full h-44 border border-[#333] overflow-hidden">
+              <iframe
+                title="Localização"
+                src="${src}"
+                class="w-full h-full"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
+          `;
+        };
+
+        const addMessage = (text, self, username = "", avatar = "", payload = null, userId = "") => {
+          const msgDiv = document.createElement("div");
+          msgDiv.className = self
+            ? "chat-bubble self-end bg-[#FFC107] text-black p-3 font-semibold"
+            : "chat-bubble self-start bg-[#1A1A1A] p-3 border-l-2 border-[#FFC107]";
+          if (userId) msgDiv.dataset.userId = userId;
+          const slotId = payload ? `media-${Math.random().toString(36).slice(2)}` : "";
+          msgDiv.innerHTML = `
+            <div class="flex items-center gap-2 mb-1">
+              ${avatar ? `<img src="${avatar}" class="w-6 h-6 object-cover border border-[#333]" />` : `<div class="w-6 h-6 bg-black border border-[#333]"></div>`}
+              ${username ? `<div class="text-[9px] uppercase tracking-widest ${self ? "text-black/60" : "text-gray-500"}">${username}</div>` : ""}
+            </div>
+            ${payload ? `<div id="${slotId}" class="mb-2 text-xs text-gray-400">Carregando...</div>` : ""}
+            ${text ? `<p class="text-sm">${text}</p>` : ""}
+            <span class="text-[8px] ${self ? "opacity-60" : "text-gray-500"} uppercase mt-1 block">
+              ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          `;
+          messages.appendChild(msgDiv);
+          messages.scrollTop = messages.scrollHeight;
+
+          if (payload) {
+            const slot = document.getElementById(slotId);
+            if (!slot) return;
+            if (payload.type === "media") {
+              slot.innerHTML = renderMedia(payload.url, payload.kind, true);
+            }
+            if (payload.type === "location") {
+              slot.innerHTML = renderLocation(payload.lat, payload.lon);
+            }
+            if (payload.type === "album") {
+              slot.innerHTML = renderAlbumCard(payload.url, payload.title, payload.thumb || "");
+            }
+          }
+        };
+
+        async function addEncryptedMedia(data, self, avatar) {
+          const slotId = `media-${Math.random().toString(36).slice(2)}`;
+          const msgDiv = document.createElement("div");
+          msgDiv.className = self
+            ? "chat-bubble self-end bg-[#FFC107] text-black p-3 font-semibold"
+            : "chat-bubble self-start bg-[#1A1A1A] p-3 border-l-2 border-[#FFC107]";
+          msgDiv.innerHTML = `
+            <div class="flex items-center gap-2 mb-1">
+              ${avatar ? `<img src="${avatar}" class="w-6 h-6 object-cover border border-[#333]" />` : `<div class="w-6 h-6 bg-black border border-[#333]"></div>`}
+              ${data.username ? `<div class="text-[9px] uppercase tracking-widest ${self ? "text-black/60" : "text-gray-500"}">${data.username}</div>` : ""}
+            </div>
+            <div id="${slotId}" class="mb-2 text-xs text-gray-400">Decodificando mídia...</div>
+            <span class="text-[8px] ${self ? "opacity-60" : "text-gray-500"} uppercase mt-1 block">
+              ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          `;
+          messages.appendChild(msgDiv);
+          messages.scrollTop = messages.scrollHeight;
+
+            const slot = document.getElementById(slotId);
+          try {
+            const secret = getRoomSecret(roomId);
+            if (!secret) {
+              slot.innerText = "Mídia criptografada. Defina o segredo.";
+              return;
+            }
+            const key = await deriveKey(secret, data.salt || (await getRoomSalt(roomId)));
+            const res = await fetch(data.url);
+            const buf = await res.arrayBuffer();
+            const pt = await decryptBuffer({ ct: bufToB64(buf), iv: data.iv }, key);
+            const blob = new Blob([pt], { type: data.orig_kind || "application/octet-stream" });
+            const objectUrl = URL.createObjectURL(blob);
+            slot.innerHTML = renderMedia(objectUrl, data.orig_kind || "application/octet-stream", true);
+          } catch (e) {
+            slot.innerText = "Falha ao decodificar mídia.";
+          }
+        }
+
+        ws.addEventListener("message", async (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.msg_id) {
+              if (seenMsgIds.has(data.msg_id)) return;
+              seenMsgIds.add(data.msg_id);
+            }
+            const self = data.username === myUser;
+            const avatar = self ? (myAvatar || data.avatar || "") : (data.avatar || "");
+
+            if (data.type === "message") {
+              if (data.enc) {
+                const secret = getRoomSecret(roomId);
+                if (!secret) {
+                  addMessage("[Mensagem criptografada]", self, data.username || "", avatar, null, data.user_id || "");
+                  return;
+                }
+                const key = await deriveKey(secret, data.salt || (await getRoomSalt(roomId)));
+                const text = await decryptText({ ct: data.ct, iv: data.iv }, key);
+                addMessage(text, self, data.username || "", avatar, null, data.user_id || "");
+              } else {
+                addMessage(data.text, self, data.username || "", avatar, null, data.user_id || "");
+              }
+            }
+
+            if (data.type === "media") {
+              if (data.enc) {
+                await addEncryptedMedia(data, self, avatar);
+              } else {
+                addMessage("", self, data.username || "", avatar, { type: "media", url: data.url, kind: data.kind || "application/octet-stream" }, data.user_id || "");
+              }
+            }
+
+            if (data.type === "location") {
+              if (data.enc) {
+                const secret = getRoomSecret(roomId);
+                if (!secret) {
+                  addMessage("[Localização criptografada]", self, data.username || "", avatar, null, data.user_id || "");
+                  return;
+                }
+                const key = await deriveKey(secret, data.salt || (await getRoomSalt(roomId)));
+                const raw = await decryptText({ ct: data.ct, iv: data.iv }, key);
+                const loc = JSON.parse(raw);
+                addMessage("", self, data.username || "", avatar, { type: "location", lat: loc.lat, lon: loc.lon }, data.user_id || "");
+              } else {
+                addMessage("", self, data.username || "", avatar, { type: "location", lat: data.lat, lon: data.lon }, data.user_id || "");
+              }
+            }
+
+            if (data.type === "album") {
+              if (data.enc) {
+                const secret = getRoomSecret(roomId);
+                if (!secret) {
+                  addMessage("[Álbum criptografado]", self, data.username || "", avatar, null, data.user_id || "");
+                  return;
+                }
+                const key = await deriveKey(secret, data.salt || (await getRoomSalt(roomId)));
+                const raw = await decryptText({ ct: data.ct, iv: data.iv }, key);
+                const alb = JSON.parse(raw);
+                addMessage("", self, data.username || "", avatar, { type: "album", url: alb.url, title: alb.title, thumb: alb.thumb || "" }, data.user_id || "");
+              } else {
+                addMessage("", self, data.username || "", avatar, { type: "album", url: data.url, title: data.title, thumb: data.thumb || "" }, data.user_id || "");
+              }
+            }
+          } catch (e) {
+            addMessage(event.data, false);
+          }
+        });
+
+        ws.addEventListener("close", (evt) => {
+          if (evt && evt.code === 4100) {
+            localStorage.removeItem("last_room_id");
+            showToast("Sala destruída");
+            window.location.href = "/app";
+            return;
+          }
+          addMessage("[Chat encerrado]", false);
+        });
+
+        async function refreshOnline() {
+          try {
+            const res = await fetch(`/room/${roomId}/online`);
+            const data = await res.json();
+            if (onlineCount) onlineCount.textContent = `${data.users.length} online`;
+            if (onlineList) {
+              onlineList.innerHTML = "";
+              data.users.forEach((uid) => {
+                const li = document.createElement("div");
+                li.className = "text-[10px] text-gray-400";
+                li.textContent = uid === myId ? "Você" : uid;
+                onlineList.appendChild(li);
+              });
+            }
+          } catch (e) {}
+        }
+
+        if (messages) {
+          messages.addEventListener("click", async (e) => {
+            const zoom = e.target.closest(".media-zoom");
+            if (zoom) {
+              const kind = zoom.getAttribute("data-kind");
+              const src = zoom.getAttribute("data-src");
+              if (kind && src) openLightbox(kind, src);
+              return;
+            }
+            const target = e.target.closest(".chat-bubble");
+            if (!target || !isOwner) return;
+            const uid = target.dataset.userId;
+            if (!uid || uid === myId) return;
+            const action = prompt("Digite 'ban' para banir ou 'kick' para expulsar:");
+            if (!action) return;
+            if (action.toLowerCase() === "ban") {
+              await fetch(`/room/${roomId}/ban/${uid}`, { method: "POST" });
+              showToast("Usuário banido");
+            } else if (action.toLowerCase() === "kick") {
+              await fetch(`/room/${roomId}/kick/${uid}`, { method: "POST" });
+              showToast("Usuário expulso");
+            }
+          });
+        }
+
+        const e2eeBtn = document.getElementById("e2eeBtn");
+        const e2eeConfirm = document.getElementById("e2eeConfirm");
+        const e2eeRotate = document.getElementById("e2eeRotate");
+        if (e2eeBtn) {
+          e2eeBtn.addEventListener("click", async () => {
+            if (e2eeEnabled) {
+              if (confirm("Desativar criptografia ponta-a-ponta nesta sala?")) {
+                e2eeEnabled = false;
+                e2eeKey = null;
+                updateE2EEStatus();
+              }
+              return;
+            }
+            await ensureE2EE(roomId);
+          });
+        }
+        if (e2eeConfirm) {
+          e2eeConfirm.addEventListener("click", () => {
+            showToast("Fingerprint confirmado");
+          });
+        }
+        if (e2eeRotate) {
+          e2eeRotate.addEventListener("click", async () => {
+            if (!confirm("Rotacionar chave desta sala?")) return;
+            e2eeEnabled = false;
+            e2eeKey = null;
+            await ensureE2EE(roomId);
+          });
+        }
+
+        updateE2EEStatus();
+
+        if (form) {
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
+            const msgId = crypto.randomUUID();
+            if (e2eeEnabled && e2eeKey) {
+              const salt = await getRoomSalt(roomId);
+              const enc = await encryptText(text, e2eeKey, salt);
+              ws.send(JSON.stringify({ type: "message", enc: true, ct: enc.ct, iv: enc.iv, salt: enc.salt, msg_id: msgId }));
+            } else {
+              ws.send(JSON.stringify({ type: "message", text, msg_id: msgId }));
+            }
+            input.value = "";
+          });
+        }
+        refreshOnline();
+        setInterval(refreshOnline, 5000);
+
+        const attachBtn = document.getElementById("attachBtn");
+        const mediaInput = document.getElementById("mediaInput");
+        const albumBtn = document.getElementById("albumBtn");
+        const uploadPreview = document.getElementById("upload-preview");
+        const previewGrid = document.getElementById("preview-grid");
+        const uploadProgress = document.getElementById("upload-progress");
+        const sendMediaBtn = document.getElementById("send-media-btn");
+        const cancelMediaBtn = document.getElementById("cancel-media-btn");
+        let pendingFiles = [];
+
+        function resetPreview() {
+          pendingFiles = [];
+          if (previewGrid) previewGrid.innerHTML = "";
+          if (uploadProgress) uploadProgress.style.width = "0%";
+          if (uploadPreview) uploadPreview.classList.add("hidden");
+        }
+
+        function renderPreviews(files) {
+          if (!previewGrid || !uploadPreview) return;
+          previewGrid.innerHTML = "";
+          Array.from(files).forEach((f) => {
+            const card = document.createElement("div");
+            card.className = "border border-[#333] bg-black p-1 text-[10px] text-gray-400";
+            if (f.type.startsWith("image/")) {
+              const img = document.createElement("img");
+              img.src = URL.createObjectURL(f);
+              img.className = "w-full h-20 object-cover";
+              card.appendChild(img);
+            } else if (f.type.startsWith("video/")) {
+              const video = document.createElement("video");
+              video.src = URL.createObjectURL(f);
+              video.className = "w-full h-20 object-cover";
+              video.muted = true;
+              card.appendChild(video);
+            } else if (f.type.startsWith("audio/")) {
+              card.innerHTML = `<div class="h-20 flex items-center justify-center border border-[#222]">Áudio</div>`;
+            } else {
+              card.innerHTML = `<div class="h-20 flex items-center justify-center border border-[#222]">Arquivo</div>`;
+            }
+            const name = document.createElement("div");
+            name.className = "mt-1 truncate";
+            name.textContent = f.name;
+            card.appendChild(name);
+            previewGrid.appendChild(card);
+          });
+          uploadPreview.classList.remove("hidden");
+        }
+
+        async function uploadMediaFiles(roomId, files) {
+          const formData = new FormData();
+          const metas = [];
+          if (e2eeEnabled && e2eeKey) {
+            const salt = await getRoomSalt(roomId);
+            for (const f of files) {
+              const buf = await f.arrayBuffer();
+              const enc = await encryptBuffer(buf, e2eeKey, salt);
+              const blob = new Blob([enc.ct], { type: "application/octet-stream" });
+              formData.append("files", blob, `${f.name}.bin`);
+              metas.push({ enc: true, iv: enc.iv, salt: enc.salt, orig_kind: f.type || "application/octet-stream" });
+            }
+          } else {
+            for (const f of files) {
+              formData.append("files", f);
+              metas.push({ enc: false, kind: f.type || "application/octet-stream" });
+            }
+          }
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `/room/${roomId}/media`);
+            xhr.upload.onprogress = (evt) => {
+              if (!evt.lengthComputable || !uploadProgress) return;
+              const pct = Math.round((evt.loaded / evt.total) * 100);
+              uploadProgress.style.width = `${pct}%`;
+            };
+            xhr.onload = () => {
+              try {
+                resolve({ data: JSON.parse(xhr.responseText), metas });
+              } catch (e) {
+                reject(e);
+              }
+            };
+            xhr.onerror = reject;
+            xhr.send(formData);
+          });
+        }
+
+        if (attachBtn && mediaInput) {
+          attachBtn.addEventListener("click", () => mediaInput.click());
+          mediaInput.addEventListener("change", async (e) => {
+            const files = e.target.files;
+            if (!files || !files.length) return;
+            pendingFiles = Array.from(files);
+            renderPreviews(pendingFiles);
+            mediaInput.value = "";
+          });
+        }
+
+        if (cancelMediaBtn) {
+          cancelMediaBtn.addEventListener("click", resetPreview);
+        }
+
+        if (sendMediaBtn) {
+          sendMediaBtn.addEventListener("click", async () => {
+            if (!pendingFiles.length) return;
+            try {
+              const { data, metas } = await uploadMediaFiles(roomId, pendingFiles);
+              if (data.items && ws) {
+                data.items.forEach((item, idx) => {
+                  const meta = metas[idx] || {};
+                  if (meta.enc) {
+                    ws.send(
+                      JSON.stringify({
+                        type: "media",
+                        enc: true,
+                        url: item.url,
+                        iv: meta.iv,
+                        salt: meta.salt,
+                        orig_kind: meta.orig_kind,
+                        msg_id: crypto.randomUUID(),
+                      })
+                    );
+                  } else {
+                    ws.send(JSON.stringify({ type: "media", url: item.url, kind: item.kind, msg_id: crypto.randomUUID() }));
+                  }
+                });
+              }
+              resetPreview();
+            } catch (e) {
+              showToast("Falha no upload");
+            }
+          });
+        }
+
+        const albumModal = document.getElementById("album-modal");
+        const albumList = document.getElementById("album-list");
+        const albumCancel = document.getElementById("album-cancel");
+        const albumTtlChat = document.getElementById("album-ttl-chat");
+
+        async function loadAlbumsForChat() {
+          if (!albumList) return;
+          const res = await fetch("/albums/me");
+          const data = await res.json();
+          albumList.innerHTML = "";
+          if (!data.albums.length) {
+            albumList.innerHTML = "<div class='text-xs text-gray-500'>Sem álbuns.</div>";
+            return;
+          }
+          data.albums.forEach((a) => {
+            const card = document.createElement("div");
+            card.className = "border border-[#333] p-3 bg-[#0f0f0f] flex flex-col gap-2";
+            const preview = a.media && a.media[0] ? a.media[0] : null;
+            card.innerHTML = `
+              <div class="text-xs uppercase text-gray-500">Álbum</div>
+              <div class="text-sm text-[#FFC107]">${a.caption || "Sem legenda"}</div>
+              ${preview && preview.kind.startsWith("image/") ? `<img src="${preview.path}" class="w-full h-28 object-cover">` : ""}
+              <button class="btn-primary w-full py-2 text-xs" data-send="${a.id}">Enviar</button>
+            `;
+            const btn = card.querySelector("[data-send]");
+            btn.addEventListener("click", async () => {
+              const ttlVal = albumTtlChat ? albumTtlChat.value : "24";
+              const shareRes = await fetch(`/album/${a.id}/share?ttl_hours=${ttlVal}`, { method: "POST" });
+              const share = await shareRes.json();
+              const url = `${location.origin}/album/shared/${share.token}`;
+              const thumb = preview && preview.kind.startsWith("image/") ? preview.path : "";
+              if (e2eeEnabled && e2eeKey) {
+                const salt = await getRoomSalt(roomId);
+                const enc = await encryptText(JSON.stringify({ url, title: a.caption || "", thumb }), e2eeKey, salt);
+                ws.send(JSON.stringify({ type: "album", enc: true, ct: enc.ct, iv: enc.iv, salt: enc.salt, msg_id: crypto.randomUUID() }));
+              } else {
+                ws.send(JSON.stringify({ type: "album", url, title: a.caption || "", thumb, msg_id: crypto.randomUUID() }));
+              }
+              albumModal.classList.add("hidden");
+              albumModal.classList.remove("flex");
+            });
+            albumList.appendChild(card);
+          });
+        }
+
+        if (albumBtn && albumModal) {
+          albumBtn.addEventListener("click", async () => {
+            await loadAlbumsForChat();
+            albumModal.classList.remove("hidden");
+            albumModal.classList.add("flex");
+          });
+        }
+        if (albumCancel && albumModal) {
+          albumCancel.addEventListener("click", () => {
+            albumModal.classList.add("hidden");
+            albumModal.classList.remove("flex");
+          });
+        }
+
+        const locBtn = document.getElementById("locBtn");
+        if (locBtn) {
+          locBtn.addEventListener("click", async () => {
+            if (!navigator.geolocation) return showToast("Geolocalização indisponível");
+            navigator.geolocation.getCurrentPosition(
+              async (pos) => {
+                if (e2eeEnabled && e2eeKey) {
+                  const salt = await getRoomSalt(roomId);
+                  const enc = await encryptText(
+                    JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+                    e2eeKey,
+                    salt
+                  );
+                  ws.send(JSON.stringify({ type: "location", enc: true, ct: enc.ct, iv: enc.iv, salt: enc.salt, msg_id: crypto.randomUUID() }));
+                } else {
+                  ws.send(
+                    JSON.stringify({
+                      type: "location",
+                      lat: pos.coords.latitude,
+                      lon: pos.coords.longitude,
+                      msg_id: crypto.randomUUID(),
+                    })
+                  );
+                }
+              },
+              () => showToast("Permissão negada"),
+              { enableHighAccuracy: true, timeout: 8000 }
+            );
+          });
+        }
+      }
+
+      async function destroyChat() {
+        const roomId = "{{ room_id or '' }}";
+        if (!roomId) return;
+        if (confirm("Deseja realmente apagar todo o histórico e sair da sala?")) {
+          await fetch(`/destroy/${roomId}`, { method: "POST" });
+          if (ws) ws.close();
+          localStorage.removeItem("last_room_id");
+          window.location.href = "/app";
+        }
+      }
+
+      function copyChatLink() {
+        const roomId = "{{ room_id or '' }}";
+        if (!roomId) return;
+        const link = `${location.origin}/room/${roomId}`;
+        navigator.clipboard.writeText(link).then(
+          () => showToast("Link de Convite Copiado!"),
+          () => showToast("Não foi possível copiar")
+        );
+      }
+
+      const copyAlbumLink = document.getElementById("copyAlbumLink");
+      if (copyAlbumLink) {
+        copyAlbumLink.addEventListener("click", async () => {
+          const ttl = document.getElementById("albumTtl");
+          const ttlVal = ttl ? ttl.value : "24";
+          const res = await fetch(`/album/{{ album.id if album else '' }}/share?ttl_hours=${ttlVal}`, { method: "POST" });
+          const data = await res.json();
+          const link = `${location.origin}/album/shared/${data.token}`;
+          try {
+            await navigator.clipboard.writeText(link);
+            showToast("Link do álbum copiado");
+          } catch (e) {
+            prompt("Copie o link do álbum:", link);
+          }
+          loadAlbumLinks("{{ album.id if album else '' }}", document.getElementById("album-links"));
+        });
+      }
+
+      const revokeAlbumLinks = document.getElementById("revokeAlbumLinks");
+      if (revokeAlbumLinks) {
+        revokeAlbumLinks.addEventListener("click", async () => {
+          if (!confirm("Revogar TODOS os links compartilhados deste álbum?")) return;
+          await fetch(`/album/{{ album.id if album else '' }}/revoke`, { method: "POST" });
+          showToast("Links revogados");
+          loadAlbumLinks("{{ album.id if album else '' }}", document.getElementById("album-links"));
+        });
+      }
+
+      const lightbox = document.getElementById("media-lightbox");
+      const lightboxContent = document.getElementById("lightbox-content");
+      const lightboxClose = document.getElementById("lightbox-close");
+
+      function openLightbox(kind, src) {
+        if (!lightbox || !lightboxContent) return;
+        lightboxContent.innerHTML = "";
+        if (kind === "image") {
+          const img = document.createElement("img");
+          img.src = src;
+          img.className = "w-full max-h-[85vh] object-contain";
+          lightboxContent.appendChild(img);
+        } else if (kind === "video") {
+          const video = document.createElement("video");
+          video.src = src;
+          video.controls = true;
+          video.className = "w-full max-h-[85vh]";
+          lightboxContent.appendChild(video);
+        }
+        lightbox.classList.remove("hidden");
+        lightbox.classList.add("flex");
+      }
+
+      function closeLightbox() {
+        if (!lightbox) return;
+        lightbox.classList.add("hidden");
+        lightbox.classList.remove("flex");
+        if (lightboxContent) lightboxContent.innerHTML = "";
+      }
+
+      if (lightboxClose) lightboxClose.addEventListener("click", closeLightbox);
+      if (lightbox) {
+        lightbox.addEventListener("click", (e) => {
+          if (e.target === lightbox) closeLightbox();
+        });
+      }
+
+      const zoomables = document.querySelectorAll(".media-zoom");
+      zoomables.forEach((el) => {
+        el.addEventListener("click", () => {
+          const kind = el.getAttribute("data-kind");
+          const src = el.getAttribute("data-src");
+          if (kind && src) openLightbox(kind, src);
+        });
+      });
+
+      const cropState = {
+        input: null,
+        aspect: 1,
+        img: null,
+        scale: 1,
+        baseScale: 1,
+        offsetX: 0,
+        offsetY: 0,
+        dragging: false,
+        startX: 0,
+        startY: 0,
+        frameW: 0,
+        frameH: 0,
+      };
+
+      function openCropper(file, input, aspect) {
+        const modal = document.getElementById("crop-modal");
+        const frame = document.getElementById("crop-frame");
+        const imgEl = document.getElementById("crop-image");
+        const zoom = document.getElementById("crop-zoom");
+
+        const maxW = aspect === 1 ? 320 : 520;
+        const w = Math.min(window.innerWidth * 0.9, maxW);
+        const h = w / aspect;
+        frame.style.width = `${w}px`;
+        frame.style.height = `${h}px`;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            cropState.input = input;
+            cropState.aspect = aspect;
+            cropState.img = img;
+            cropState.scale = 1;
+            cropState.offsetX = 0;
+            cropState.offsetY = 0;
+            cropState.frameW = w;
+            cropState.frameH = h;
+            cropState.baseScale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+            imgEl.src = img.src;
+            updateCropTransform();
+            zoom.value = 1;
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function updateCropTransform() {
+        const imgEl = document.getElementById("crop-image");
+        const scale = cropState.baseScale * cropState.scale;
+        imgEl.style.transform = `translate(-50%, -50%) translate(${cropState.offsetX}px, ${cropState.offsetY}px) scale(${scale})`;
+      }
+
+      function closeCropper() {
+        const modal = document.getElementById("crop-modal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function applyCropper() {
+        if (!cropState.img || !cropState.input) return;
+        const img = cropState.img;
+        const frameW = cropState.frameW;
+        const frameH = cropState.frameH;
+        const displayScale = cropState.baseScale * cropState.scale;
+
+        const imgDisplayW = img.naturalWidth * displayScale;
+        const imgDisplayH = img.naturalHeight * displayScale;
+        const imgX = (frameW - imgDisplayW) / 2 + cropState.offsetX;
+        const imgY = (frameH - imgDisplayH) / 2 + cropState.offsetY;
+
+        let sx = (0 - imgX) / displayScale;
+        let sy = (0 - imgY) / displayScale;
+        let sw = frameW / displayScale;
+        let sh = frameH / displayScale;
+
+        if (sx < 0) {
+          sw += sx;
+          sx = 0;
+        }
+        if (sy < 0) {
+          sh += sy;
+          sy = 0;
+        }
+        if (sx + sw > img.naturalWidth) sw = img.naturalWidth - sx;
+        if (sy + sh > img.naturalHeight) sh = img.naturalHeight - sy;
+
+        const canvasW = cropState.aspect === 1 ? 800 : 1600;
+        const canvasH = Math.round(canvasW / cropState.aspect);
+        const canvas = document.createElement("canvas");
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvasW, canvasH);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return;
+            const dt = new DataTransfer();
+            const name = cropState.input.name === "avatar" ? "avatar.jpg" : "banner.jpg";
+            dt.items.add(new File([blob], name, { type: "image/jpeg" }));
+            cropState.input.files = dt.files;
+            const previewId = cropState.input.getAttribute("data-preview");
+            if (previewId) {
+              const preview = document.getElementById(previewId);
+              if (preview) preview.src = URL.createObjectURL(blob);
+            }
+            closeCropper();
+          },
+          "image/jpeg",
+          0.92
+        );
+      }
+
+      function bindCropper() {
+        const inputs = document.querySelectorAll("[data-crop]");
+        inputs.forEach((input) => {
+          input.addEventListener("change", (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith("image/")) return;
+            const aspect = input.getAttribute("data-crop") === "avatar" ? 1 : 16 / 9;
+            openCropper(file, input, aspect);
+          });
+        });
+
+        const frame = document.getElementById("crop-frame");
+        const zoom = document.getElementById("crop-zoom");
+        const cancel = document.getElementById("crop-cancel");
+        const apply = document.getElementById("crop-apply");
+
+        if (frame) {
+          frame.addEventListener("pointerdown", (e) => {
+            cropState.dragging = true;
+            cropState.startX = e.clientX;
+            cropState.startY = e.clientY;
+            frame.setPointerCapture(e.pointerId);
+          });
+          frame.addEventListener("pointermove", (e) => {
+            if (!cropState.dragging) return;
+            const dx = e.clientX - cropState.startX;
+            const dy = e.clientY - cropState.startY;
+            cropState.offsetX += dx;
+            cropState.offsetY += dy;
+            cropState.startX = e.clientX;
+            cropState.startY = e.clientY;
+            updateCropTransform();
+          });
+          frame.addEventListener("pointerup", (e) => {
+            cropState.dragging = false;
+            frame.releasePointerCapture(e.pointerId);
+          });
+          frame.addEventListener("pointerleave", () => {
+            cropState.dragging = false;
+          });
+        }
+
+        if (zoom) {
+          zoom.addEventListener("input", (e) => {
+            cropState.scale = parseFloat(e.target.value || "1");
+            updateCropTransform();
+          });
+        }
+        if (cancel) cancel.addEventListener("click", closeCropper);
+        if (apply) apply.addEventListener("click", applyCropper);
+      }
+
+      async function initApp() {
+        updateLocation();
+        bindCropper();
+        loadAlbums();
+        loadProfilePhotos();
+        const shouldOpen = "{{ '1' if open_profile else '0' }}" === "1";
+        if (shouldOpen) {
+          openProfile();
+        }
+        const last = localStorage.getItem("last_room_id");
+        const resumeBtn = document.getElementById("resumeRoomBtn");
+        if (last && resumeBtn) {
+          resumeBtn.href = `/room/${last}`;
+          resumeBtn.classList.remove("hidden");
+        }
+      }
+
+      if ("{{ mode }}" === "app") {
+        initApp();
+      }
+      if ("{{ mode }}" === "chat") {
+        initChat();
+      }
+      if ("{{ mode }}" === "album" && document.getElementById("album-links")) {
+        loadAlbumLinks("{{ album.id if album else '' }}", document.getElementById("album-links"));
+      }
+
+      lucide.createIcons();
+    </script>
+  </body>
+</html>
