@@ -16,6 +16,7 @@
       rel="stylesheet"
     />
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
     <style>
       :root {
@@ -372,7 +373,7 @@
 
               <div class="space-y-2">
                 <label class="text-[10px] uppercase text-gray-500 font-bold">Editar perfil</label>
-                <form
+              <form
                   id="profileForm"
                   method="post"
                   action="/me/profile"
@@ -384,6 +385,12 @@
                     class="input-dark p-3 w-full"
                     value="{{ user.username }}"
                     placeholder="Nome de usuário"
+                  />
+                  <input
+                    name="btc_address"
+                    class="input-dark p-3 w-full"
+                    value="{{ user.btc_address or '' }}"
+                    placeholder="BTC address (opcional)"
                   />
                   <textarea
                     name="bio"
@@ -437,6 +444,18 @@
                   </button>
                 </form>
                 <div id="profile-photos" class="grid grid-cols-3 gap-2"></div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-[10px] uppercase text-gray-500 font-bold">Receber BTC</label>
+                <div class="text-xs text-gray-400 break-all" id="btcAddressText">{{ user.btc_address or '' }}</div>
+                <div id="btcQrWrap" class="mt-2 hidden">
+                  <canvas id="btcQr" class="bg-white p-2"></canvas>
+                </div>
+                <div class="flex gap-2">
+                  <button id="btcCopy" class="px-3 py-2 text-xs border border-[#333] text-gray-400" type="button">Copiar</button>
+                  <a id="btcOpen" class="px-3 py-2 text-xs border border-[#333] text-gray-400" href="#" target="_blank">Abrir carteira</a>
+                </div>
               </div>
             </div>
 
@@ -1952,6 +1971,32 @@
         if (last && resumeBtn) {
           resumeBtn.href = `/room/${last}`;
           resumeBtn.classList.remove("hidden");
+        }
+        const btcText = document.getElementById("btcAddressText");
+        const btcWrap = document.getElementById("btcQrWrap");
+        const btcCanvas = document.getElementById("btcQr");
+        const btcCopy = document.getElementById("btcCopy");
+        const btcOpen = document.getElementById("btcOpen");
+        if (btcText && btcText.textContent.trim()) {
+          const addr = btcText.textContent.trim();
+          if (btcWrap) btcWrap.classList.remove("hidden");
+          if (btcCanvas) {
+            QRCode.toCanvas(btcCanvas, `bitcoin:${addr}`, { width: 180 });
+          }
+          if (btcOpen) btcOpen.href = `bitcoin:${addr}`;
+          if (btcCopy) {
+            btcCopy.addEventListener("click", async () => {
+              try {
+                await navigator.clipboard.writeText(addr);
+                showToast("BTC copiado");
+              } catch (e) {
+                prompt("Copie o endereço BTC:", addr);
+              }
+            });
+          }
+        } else {
+          if (btcWrap) btcWrap.classList.add("hidden");
+          if (btcOpen) btcOpen.href = "#";
         }
       }
 

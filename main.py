@@ -66,12 +66,17 @@ def init_db() -> None:
             bio TEXT DEFAULT '',
             banner_path TEXT DEFAULT '',
             avatar_path TEXT DEFAULT '',
+            btc_address TEXT DEFAULT '',
             created_at TEXT NOT NULL
         );
         """
     )
     try:
         cur.execute("ALTER TABLE users ADD COLUMN avatar_path TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("ALTER TABLE users ADD COLUMN btc_address TEXT DEFAULT ''")
     except sqlite3.OperationalError:
         pass
     cur.execute(
@@ -353,12 +358,14 @@ async def update_profile(
     request: Request,
     username: str = Form(""),
     bio: str = Form(""),
+    btc_address: str = Form(""),
     banner: UploadFile = File(None),
     avatar: UploadFile = File(None),
 ):
     user = require_user(request)
     banner_path = user["banner_path"]
     avatar_path = user["avatar_path"]
+    btc = btc_address.strip()
 
     if banner is not None:
         ext = os.path.splitext(banner.filename or "")[1].lower()
@@ -387,8 +394,8 @@ async def update_profile(
             conn.close()
             raise HTTPException(status_code=400, detail="Username already exists")
     cur.execute(
-        "UPDATE users SET username = ?, bio = ?, banner_path = ?, avatar_path = ? WHERE id = ?",
-        (username or user["username"], bio, banner_path, avatar_path, user["id"]),
+        "UPDATE users SET username = ?, bio = ?, banner_path = ?, avatar_path = ?, btc_address = ? WHERE id = ?",
+        (username or user["username"], bio, banner_path, avatar_path, btc, user["id"]),
     )
     conn.commit()
     conn.close()
