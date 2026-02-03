@@ -45,6 +45,7 @@ rooms_connections: Dict[str, Set[WebSocket]] = {}
 rooms_owner: Dict[str, str] = {}
 rooms_banned: Dict[str, Set[str]] = {}
 rooms_user_sockets: Dict[str, Dict[str, Set[WebSocket]]] = {}
+rooms_user_meta: Dict[str, Dict[str, dict]] = {}
 rooms_deleted: Set[str] = set()
 
 
@@ -188,6 +189,18 @@ def ensure_room(room_id: str) -> None:
     rooms_connections.setdefault(room_id, set())
     rooms_banned.setdefault(room_id, set())
     rooms_user_sockets.setdefault(room_id, {})
+    rooms_user_meta.setdefault(room_id, {})
+
+
+async def broadcast(room_id: str, msg: dict) -> None:
+    dead = []
+    for conn in rooms_connections.get(room_id, set()):
+        try:
+            await conn.send_json(msg)
+        except Exception:
+            dead.append(conn)
+    for conn in dead:
+        rooms_connections[room_id].discard(conn)
 
 
 def get_session_user(request: Request) -> Optional[sqlite3.Row]:
@@ -235,10 +248,16 @@ async def home(request: Request):
     user = get_session_user(request)
     if user:
         return RedirectResponse(url="/app")
-    return templates.TemplateResponse(
+    # lightweight captcha (simple math)
+    a = uuid.uuid4().int % 9 + 1
+    b = (uuid.uuid4().int // 10) % 9 + 1
+    answer = str(a + b)
+    resp = templates.TemplateResponse(
         "index.html",
-        {"request": request, "mode": "auth", "user": None},
+        {"request": request, "mode": "auth", "user": None, "captcha_q": f"{a} + {b}"},
     )
+    resp.set_cookie("captcha_answer", answer, max_age=600, httponly=True)
+    return resp
 
 
 @app.get("/app")
@@ -258,7 +277,14 @@ async def app_home(request: Request):
 
 
 @app.post("/auth/register")
-async def register(username: str = Form(...), password: str = Form(...)):
+async def register(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    captcha: str = Form(...),
+):
+    if captcha.strip() != (request.cookies.get("captcha_answer") or ""):
+        raise HTTPException(status_code=400, detail="Invalid captcha")
     conn = get_db()
     cur = conn.cursor()
     user_id = str(uuid.uuid4())
@@ -279,7 +305,14 @@ async def register(username: str = Form(...), password: str = Form(...)):
 
 
 @app.post("/auth/login")
-async def login(username: str = Form(...), password: str = Form(...)):
+async def login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    captcha: str = Form(...),
+):
+    if captcha.strip() != (request.cookies.get("captcha_answer") or ""):
+        raise HTTPException(status_code=400, detail="Invalid captcha")
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE username = ?", (username,))
@@ -763,6 +796,7 @@ async def destroy_room(request: Request, room_id: str):
     rooms_owner.pop(room_id, None)
     rooms_banned.pop(room_id, None)
     rooms_user_sockets.pop(room_id, None)
+    rooms_user_meta.pop(room_id, None)
     rooms_deleted.add(room_id)
     return {"ok": True}
 
@@ -842,9 +876,11 @@ async def room_online(request: Request, room_id: str):
     if not owner:
         raise HTTPException(status_code=404, detail="Room not found")
     users = []
+    meta = rooms_user_meta.get(room_id, {})
     for uid, sockets in rooms_user_sockets.get(room_id, {}).items():
         if sockets:
-            users.append(uid)
+            info = meta.get(uid, {"username": uid, "avatar": ""})
+            users.append({"id": uid, "username": info.get("username", uid), "avatar": info.get("avatar", "")})
     return {"users": users}
 
 
@@ -888,6 +924,19 @@ async def websocket_endpoint(ws: WebSocket, room_id: str):
         return
     rooms_connections[room_id].add(ws)
     rooms_user_sockets.setdefault(room_id, {}).setdefault(user["id"], set()).add(ws)
+    rooms_user_meta.setdefault(room_id, {})[user["id"]] = {
+        "username": user["username"],
+        "avatar": user["avatar_path"],
+    }
+
+    await broadcast(
+        room_id,
+        {
+            "type": "system",
+            "text": f"{user['username']} entrou na sala",
+            "ts": now_iso(),
+        },
+    )
 
     for msg in rooms_messages.get(room_id, []):
         await ws.send_json(msg)
@@ -967,6 +1016,22 @@ async def websocket_endpoint(ws: WebSocket, room_id: str):
                             "avatar": user["avatar_path"],
                             "ts": now_iso(),
                         }
+                if isinstance(payload, dict) and payload.get("type") == "typing":
+                    msg = {
+                        "type": "typing",
+                        "state": bool(payload.get("state", False)),
+                        "user_id": user["id"],
+                        "username": user["username"],
+                        "ts": now_iso(),
+                    }
+                if isinstance(payload, dict) and payload.get("type") == "read":
+                    msg = {
+                        "type": "read",
+                        "msg_id": payload.get("msg_id", ""),
+                        "user_id": user["id"],
+                        "username": user["username"],
+                        "ts": now_iso(),
+                    }
             except Exception:
                 msg = None
 
@@ -993,9 +1058,29 @@ async def websocket_endpoint(ws: WebSocket, room_id: str):
     except WebSocketDisconnect:
         rooms_connections[room_id].discard(ws)
         rooms_user_sockets.get(room_id, {}).get(user["id"], set()).discard(ws)
+        if not rooms_user_sockets.get(room_id, {}).get(user["id"]):
+            rooms_user_meta.get(room_id, {}).pop(user["id"], None)
+            await broadcast(
+                room_id,
+                {
+                    "type": "system",
+                    "text": f"{user['username']} saiu da sala",
+                    "ts": now_iso(),
+                },
+            )
     except Exception:
         rooms_connections[room_id].discard(ws)
         rooms_user_sockets.get(room_id, {}).get(user["id"], set()).discard(ws)
+        if not rooms_user_sockets.get(room_id, {}).get(user["id"]):
+            rooms_user_meta.get(room_id, {}).pop(user["id"], None)
+            await broadcast(
+                room_id,
+                {
+                    "type": "system",
+                    "text": f"{user['username']} saiu da sala",
+                    "ts": now_iso(),
+                },
+            )
         try:
             await ws.close(code=1011)
         except Exception:

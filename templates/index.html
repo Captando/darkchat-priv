@@ -31,6 +31,8 @@
         color: white;
         margin: 0;
         overflow-x: hidden;
+        min-height: 100dvh;
+        padding-bottom: env(safe-area-inset-bottom);
       }
 
       h1,
@@ -108,6 +110,9 @@
 
       .modal-enter {
         animation: fadeIn 0.2s ease-in-out;
+      }
+      .safe-bottom {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
       }
       .upload-bar {
         height: 4px;
@@ -194,6 +199,17 @@
                   required
                 />
               </div>
+              <div class="flex flex-col">
+                <label class="text-[10px] uppercase text-gray-400 mb-1">Captcha</label>
+                <div class="text-xs text-gray-500 mb-1">{{ captcha_q or "" }}</div>
+                <input
+                  name="captcha"
+                  type="text"
+                  placeholder="Resposta"
+                  class="input-dark p-3"
+                  required
+                />
+              </div>
               <button class="btn-primary w-full py-4 mt-4 font-bebas text-xl" type="submit">
                 Entrar no Perímetro
               </button>
@@ -218,6 +234,17 @@
                   name="password"
                   type="password"
                   placeholder="••••••••"
+                  class="input-dark p-3"
+                  required
+                />
+              </div>
+              <div class="flex flex-col">
+                <label class="text-[10px] uppercase text-gray-400 mb-1">Captcha</label>
+                <div class="text-xs text-gray-500 mb-1">{{ captcha_q or "" }}</div>
+                <input
+                  name="captcha"
+                  type="text"
+                  placeholder="Resposta"
                   class="input-dark p-3"
                   required
                 />
@@ -487,13 +514,17 @@
           </div>
           <div class="text-[10px] text-gray-500 uppercase flex items-center justify-between">
             <span id="online-count">0 online</span>
+            <span id="typing-status"></span>
+          </div>
+          <div class="text-[10px] text-gray-500 uppercase mt-1">
+            <span id="read-status"></span>
           </div>
           <div id="online-list" class="mt-2 flex flex-wrap gap-2"></div>
         </header>
 
         <div id="messages-list" class="flex-grow overflow-y-auto p-4 space-y-4 flex flex-col"></div>
 
-        <div id="upload-preview" class="hidden border-t border-[#222] bg-[#0b0b0b] p-3 space-y-3">
+        <div id="upload-preview" class="hidden border-t border-[#222] bg-[#0b0b0b] p-3 space-y-3 safe-bottom">
           <div class="text-[10px] uppercase text-gray-500">Prévia de mídia</div>
           <div id="preview-grid" class="grid grid-cols-3 gap-2"></div>
           <div class="upload-bar"><span id="upload-progress"></span></div>
@@ -507,7 +538,7 @@
           </div>
         </div>
 
-        <footer class="p-3 sm:p-4 bg-[#1A1A1A] border-t border-[#333]">
+        <footer class="p-3 sm:p-4 bg-[#1A1A1A] border-t border-[#333] safe-bottom">
           <form id="chatForm" class="flex gap-2 items-center">
             <input id="mediaInput" type="file" multiple class="hidden" />
             <button type="button" id="albumBtn" class="p-2 bg-black border border-[#333] text-gray-400 hover:text-[#FFC107]">
@@ -1062,6 +1093,11 @@
         const isOwner = ownerId && myId && ownerId === myId;
         const onlineList = document.getElementById("online-list");
         const onlineCount = document.getElementById("online-count");
+        const typingStatus = document.getElementById("typing-status");
+        const readStatus = document.getElementById("read-status");
+        let typingTimer = null;
+        let lastSentMsgId = "";
+        let typingUsers = new Set();
 
         const renderMedia = (url, kind, zoomable = false) => {
           const zoomClass = zoomable ? "media-zoom cursor-zoom-in" : "";
@@ -1107,6 +1143,14 @@
               ></iframe>
             </div>
           `;
+        };
+
+        const addSystemMessage = (text) => {
+          const msgDiv = document.createElement("div");
+          msgDiv.className = "text-[10px] text-gray-500 uppercase text-center tracking-wider";
+          msgDiv.textContent = text;
+          messages.appendChild(msgDiv);
+          messages.scrollTop = messages.scrollHeight;
         };
 
         const addMessage = (text, self, username = "", avatar = "", payload = null, userId = "") => {
@@ -1193,6 +1237,29 @@
             const self = data.username === myUser;
             const avatar = self ? (myAvatar || data.avatar || "") : (data.avatar || "");
 
+            if (data.type === "system") {
+              addSystemMessage(data.text || "");
+              return;
+            }
+
+            if (data.type === "typing") {
+              if (!data.username || data.username === myUser) return;
+              if (data.state) typingUsers.add(data.username);
+              else typingUsers.delete(data.username);
+              if (typingStatus) {
+                typingStatus.textContent = typingUsers.size ? `${Array.from(typingUsers).join(", ")} digitando...` : "";
+              }
+              return;
+            }
+
+            if (data.type === "read") {
+              if (data.user_id === myId) return;
+              if (data.msg_id && data.msg_id === lastSentMsgId && readStatus) {
+                readStatus.textContent = `Lido por ${data.username}`;
+              }
+              return;
+            }
+
             if (data.type === "message") {
               if (data.enc) {
                 const secret = getRoomSecret(roomId);
@@ -1206,6 +1273,9 @@
               } else {
                 addMessage(data.text, self, data.username || "", avatar, null, data.user_id || "");
               }
+              if (!self && data.msg_id) {
+                ws.send(JSON.stringify({ type: "read", msg_id: data.msg_id }));
+              }
             }
 
             if (data.type === "media") {
@@ -1213,6 +1283,9 @@
                 await addEncryptedMedia(data, self, avatar);
               } else {
                 addMessage("", self, data.username || "", avatar, { type: "media", url: data.url, kind: data.kind || "application/octet-stream" }, data.user_id || "");
+              }
+              if (!self && data.msg_id) {
+                ws.send(JSON.stringify({ type: "read", msg_id: data.msg_id }));
               }
             }
 
@@ -1230,6 +1303,9 @@
               } else {
                 addMessage("", self, data.username || "", avatar, { type: "location", lat: data.lat, lon: data.lon }, data.user_id || "");
               }
+              if (!self && data.msg_id) {
+                ws.send(JSON.stringify({ type: "read", msg_id: data.msg_id }));
+              }
             }
 
             if (data.type === "album") {
@@ -1245,6 +1321,9 @@
                 addMessage("", self, data.username || "", avatar, { type: "album", url: alb.url, title: alb.title, thumb: alb.thumb || "" }, data.user_id || "");
               } else {
                 addMessage("", self, data.username || "", avatar, { type: "album", url: data.url, title: data.title, thumb: data.thumb || "" }, data.user_id || "");
+              }
+              if (!self && data.msg_id) {
+                ws.send(JSON.stringify({ type: "read", msg_id: data.msg_id }));
               }
             }
           } catch (e) {
@@ -1271,8 +1350,11 @@
               onlineList.innerHTML = "";
               data.users.forEach((uid) => {
                 const li = document.createElement("div");
-                li.className = "text-[10px] text-gray-400";
-                li.textContent = uid === myId ? "Você" : uid;
+                li.className = "flex items-center gap-2 bg-black border border-[#222] px-2 py-1";
+                li.innerHTML = `
+                  ${uid.avatar ? `<img src="${uid.avatar}" class="w-4 h-4 object-cover border border-[#333]" />` : `<div class="w-4 h-4 bg-[#111] border border-[#333]"></div>`}
+                  <span class="text-[10px] text-gray-400">${uid.id === myId ? "Você" : uid.username}</span>
+                `;
                 onlineList.appendChild(li);
               });
             }
@@ -1342,6 +1424,8 @@
             const text = input.value.trim();
             if (!text) return;
             const msgId = crypto.randomUUID();
+            lastSentMsgId = msgId;
+            if (readStatus) readStatus.textContent = "";
             if (e2eeEnabled && e2eeKey) {
               const salt = await getRoomSalt(roomId);
               const enc = await encryptText(text, e2eeKey, salt);
@@ -1350,6 +1434,13 @@
               ws.send(JSON.stringify({ type: "message", text, msg_id: msgId }));
             }
             input.value = "";
+          });
+          input.addEventListener("input", () => {
+            ws.send(JSON.stringify({ type: "typing", state: true }));
+            if (typingTimer) clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+              ws.send(JSON.stringify({ type: "typing", state: false }));
+            }, 1200);
           });
         }
         refreshOnline();
