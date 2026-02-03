@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#000"/>
+  <rect x="64" y="64" width="384" height="384" fill="#FFC107"/>
+  <rect x="96" y="96" width="320" height="320" fill="#000"/>
+  <text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" font-family="Bebas Neue, Arial" font-size="140" fill="#FFC107">DC</text>
+</svg>

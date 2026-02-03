@@ -5,6 +5,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.0.0-009688)
 ![License](https://img.shields.io/badge/license-MIT-black)
 ![Repo](https://img.shields.io/badge/repo-darkchat--priv-black)
+![Made by Human](https://img.shields.io/badge/made%20by-human%2C%20not%20AI-black)
 
 Aplicação de chat privado com FastAPI + WebSockets e frontend em HTML/Tailwind. Inclui perfis, álbuns privados com links temporários, mídia no chat (com preview), localização e criptografia ponta‑a‑ponta opcional no cliente.
 
@@ -49,6 +50,39 @@ docker compose up -d --build
 - Use `Dockerfile` da raiz.
 - Exponha a porta `8000`.
 - Monte um volume persistente para `DATA_DIR` (veja abaixo).
+
+## App mobile (PWA + Capacitor)
+Este projeto já vem com PWA (manifest + service worker) e configuração do Capacitor.
+
+### 1) Instalar dependências
+```bash
+npm install
+```
+
+### 2) Inicializar Capacitor
+```bash
+npm run capacitor:init
+```
+
+### 3) Android (APK)
+```bash
+npm run capacitor:add:android
+npm run capacitor:sync
+npm run capacitor:open:android
+```
+
+### 4) iOS
+```bash
+npm run capacitor:add:ios
+npm run capacitor:sync
+npm run capacitor:open:ios
+```
+
+**Nota:** o app usa `server.url` apontando para `http://localhost:8000`.  
+Para produção, altere para o domínio do seu backend ou use:
+```bash
+export CAP_SERVER_URL=https://seu-dominio.com
+```
 
 ## Variáveis de Ambiente
 - `DATA_DIR`: diretório para o banco e uploads (padrão: `./data`).

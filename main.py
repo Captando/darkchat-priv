@@ -35,6 +35,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 

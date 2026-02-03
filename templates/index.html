@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DARKROOM | Private Chat</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/static/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/static/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/static/favicon-180.png" sizes="180x180" />
+    <link rel="manifest" href="/static/manifest.json" />
+    <meta name="theme-color" content="#FFC107" />
     <link
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;600;800&display=swap"
       rel="stylesheet"
@@ -1869,6 +1875,12 @@
       }
 
       lucide.createIcons();
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/static/sw.js");
+        });
+      }
     </script>
   </body>
 </html>

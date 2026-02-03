@@ -1,0 +1,20 @@
+{
+  "name": "darkchat-priv",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Private DarkChat PWA wrapper",
+  "scripts": {
+    "capacitor:init": "npx cap init 'Private DarkChat' 'com.captando.darkchat' --web-dir=dist",
+    "capacitor:add:android": "npx cap add android",
+    "capacitor:add:ios": "npx cap add ios",
+    "capacitor:sync": "npx cap sync",
+    "capacitor:open:android": "npx cap open android",
+    "capacitor:open:ios": "npx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  }
+}
