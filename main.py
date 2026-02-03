@@ -870,7 +870,7 @@ async def upload_room_media(
 
 @app.get("/room/{room_id}/online")
 async def room_online(request: Request, room_id: str):
-    user = require_user(request)
+    require_user(request)
     owner = rooms_owner.get(room_id)
     if not owner:
         raise HTTPException(status_code=404, detail="Room not found")
