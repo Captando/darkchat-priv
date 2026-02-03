@@ -26,9 +26,13 @@ def client():
 
 
 def register_and_login(client):
-    r = client.post("/auth/register", data={"username": "u1", "password": "p1"})
+    client.get("/")
+    captcha = client.cookies.get("captcha_answer", "")
+    r = client.post("/auth/register", data={"username": "u1", "password": "p1", "captcha": captcha})
     assert r.status_code in (200, 303)
-    r = client.post("/auth/login", data={"username": "u1", "password": "p1"})
+    client.get("/")
+    captcha = client.cookies.get("captcha_answer", "")
+    r = client.post("/auth/login", data={"username": "u1", "password": "p1", "captcha": captcha})
     assert r.status_code in (200, 303)
     return r.cookies
 
