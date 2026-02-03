@@ -160,14 +160,17 @@ async def on_startup() -> None:
 def now_iso() -> str:
     return datetime.utcnow().isoformat()
 
+
 def now_dt() -> datetime:
     return datetime.utcnow()
+
 
 def parse_iso(value: str) -> Optional[datetime]:
     try:
         return datetime.fromisoformat(value)
     except Exception:
         return None
+
 
 def ext_from_content_type(content_type: str) -> str:
     mapping = {
@@ -234,9 +237,7 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     d_lon = math.radians(lon2 - lon1)
     a = (
         math.sin(d_lat / 2) ** 2
-        + math.cos(math.radians(lat1))
-        * math.cos(math.radians(lat2))
-        * math.sin(d_lon / 2) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(d_lon / 2) ** 2
     )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return r * c
@@ -443,7 +444,9 @@ async def delete_profile_photo(request: Request, photo_id: str):
     row = cur.fetchone()
     if row:
         path = row["path"]
-        cur.execute("DELETE FROM profile_photos WHERE id = ? AND user_id = ?", (photo_id, user["id"]))
+        cur.execute(
+            "DELETE FROM profile_photos WHERE id = ? AND user_id = ?", (photo_id, user["id"])
+        )
         try:
             if path.startswith("/uploads/"):
                 os.remove(os.path.join(UPLOAD_DIR, path.replace("/uploads/", "")))
@@ -879,7 +882,9 @@ async def room_online(request: Request, room_id: str):
     for uid, sockets in rooms_user_sockets.get(room_id, {}).items():
         if sockets:
             info = meta.get(uid, {"username": uid, "avatar": ""})
-            users.append({"id": uid, "username": info.get("username", uid), "avatar": info.get("avatar", "")})
+            users.append(
+                {"id": uid, "username": info.get("username", uid), "avatar": info.get("avatar", "")}
+            )
     return {"users": users}
 
 

@@ -2,12 +2,18 @@ import importlib
 import os
 import tempfile
 from io import BytesIO
+from pathlib import Path
+
+import sys
 
 import pytest
 from fastapi.testclient import TestClient
 
 
 def make_client():
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
     tmp = tempfile.TemporaryDirectory()
     os.environ["DATA_DIR"] = tmp.name
     os.environ["DB_PATH"] = os.path.join(tmp.name, "app.db")
